@@ -1,25 +1,23 @@
-# Dá permissão de execução ao arquivo gradlew
-RUN chmod +x ./gradlew
+FROM eclipse-temurin:21-jdk AS build
 
-# Baixa dependências
-RUN ./gradlew dependencies --no-daemon || true
+WORKDIR /app
 
-# Copia o restante do projeto
-COPY . .
+COPY gradlew .
+COPY gradle ./gradle
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
 
-# Garante a permissão de execução novamente (caso o COPY . . tenha sobrescrito)
-RUN chmod +x ./gradlew
+COPY src ./src
 
-# Gera o JAR
-RUN ./gradlew bootJar --no-daemon
+RUN chmod +x gradlew
 
-# Imagem final
+RUN ./gradlew clean bootJar --no-daemon
+
+
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*.jar app.jar
 
-EXPOSE 8080
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "app.jar"]
